@@ -139,10 +139,10 @@ function newsFeed() {
   var newsFeed = getData(NEWS_URL);
   var newsList = [];
   var maxPage = newsFeed.length % 10 === 0 ? newsFeed.length / 10 : newsFeed.length / 10 + 1;
-  var template = "\n\t\t<div class=\"container mx-auto p-4\">\n\t\t\t<h1>Hacker News</h1>\n\t\t\t<ul>\n\t\t\t\t{{__news_feed__}}\n\t\t\t</ul>\n\t\t\t<div>\n\t\t\t\t<a href=\"#/page/{{__prev_page__}}\">\uC774\uC804 \uD398\uC774\uC9C0</a>\n\t\t\t\t<a href=\"#/page/{{__next_page__}}\">\uB2E4\uC74C \uD398\uC774\uC9C0</a>\n\t\t\t</div>\n\t\t</div>\n\t";
+  var template = "\n\t<div class=\"bg-gray-600 min-h-screen\">\n\t<div class=\"bg-white text-xl\">\n\t\t<div class=\"mx-auto px-4\">\n\t\t\t<div class=\"flex justify-between items-center py-6\">\n\t\t\t\t<div class=\"flex justify-start\">\n\t\t\t\t\t<h1 class=\"font-extrabold\">Hacker News</h1>\n\t\t\t\t</div>\n\t\t\t\t<div class=\"items-center justify-end\">\n\t\t\t\t\t<a href=\"#/page/{{__prev_page__}}\" class=\"text-gray-500\">\n\t\t\t\t\t\tPrevious\n\t\t\t\t\t</a>\n\t\t\t\t\t<a href=\"#/page/{{__next_page__}}\" class=\"text-gray-500 ml-4\">\n\t\t\t\t\t\tNext\n\t\t\t\t\t</a>\n\t\t\t\t</div>\n\t\t\t</div> \n\t\t</div>\n\t</div>\n\t<div class=\"p-4 text-2xl text-gray-700\">\n\t\t{{__news_feed__}}        \n\t</div>\n</div>\n\t";
 
   for (var i = (store.currentPage - 1) * 10; i < store.currentPage * 10; ++i) {
-    newsList.push("\n\t\t\t<li>\n\t\t\t\t<a href='#/show/".concat(newsFeed[i].id, "'>\n\t\t\t\t\t").concat(newsFeed[i].title, " (").concat(newsFeed[i].comments_count, ")\n\t\t\t\t</a>\n\t\t\t</li>\n\t\t"));
+    newsList.push("\n      <div class=\"p-6 bg-white mt-6 rounded-lg shadow-md transition-colors duration-500 hover:bg-green-100\">\n        <div class=\"flex\">\n          <div class=\"flex-auto\">\n            <a href=\"#/show/".concat(newsFeed[i].id, "\">").concat(newsFeed[i].title, "</a>  \n          </div>\n          <div class=\"text-center text-sm\">\n            <div class=\"w-10 text-white bg-green-300 rounded-lg px-0 py-2\">").concat(newsFeed[i].comments_count, "</div>\n          </div>\n        </div>\n        <div class=\"flex mt-3\">\n          <div class=\"grid grid-cols-3 text-sm text-gray-500\">\n            <div><i class=\"fas fa-user mr-1\"></i>").concat(newsFeed[i].user, "</div>\n            <div><i class=\"fas fa-heart mr-1\"></i>").concat(newsFeed[i].points, "</div>\n            <div><i class=\"far fa-clock mr-1\"></i>").concat(newsFeed[i].time_ago, "</div>\n          </div>  \n        </div>\n      </div>    \n    "));
   }
 
   ;
@@ -158,7 +158,25 @@ function newsDetail() {
   var id = location.hash.substr(7); // #으로 시작하는 해쉬값에서 #을 제거하여 id 값만을 순수하게 추출하여 저장
 
   var newsContent = getData(CONTENT_URL.replace('@id', id));
-  container.innerHTML = "<h1>".concat(newsContent.title, "</h1><div><a href='#/page/").concat(store.currentPage, "'>\uBAA9\uB85D\uC73C\uB85C</div>");
+  var template = "\n    <div class=\"bg-gray-600 min-h-screen pb-8\">\n      <div class=\"bg-white text-xl\">\n        <div class=\"mx-auto px-4\">\n          <div class=\"flex justify-between items-center py-6\">\n            <div class=\"flex justify-start\">\n              <h1 class=\"font-extrabold\">Hacker News</h1>\n            </div>\n            <div class=\"items-center justify-end\">\n              <a href=\"#/page/".concat(store.currentPage, "\" class=\"text-gray-500\">\n                <i class=\"fa fa-times\"></i>\n              </a>\n            </div>\n          </div>\n        </div>\n      </div>\n\n      <div class=\"h-full border rounded-xl bg-white m-6 p-4 \">\n        <h2>").concat(newsContent.title, "</h2>\n        <div class=\"text-gray-400 h-20\">\n          ").concat(newsContent.content, "\n        </div>\n\n        {{__comments__}}\n\n      </div>\n    </div>\n  ");
+
+  function makeComment(comments) {
+    var called = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+    var commentString = [];
+
+    for (var i = 0; i < comments.length; ++i) {
+      commentString.push("\n        <div style=\"padding-left: ".concat(called * 40, "px;\" class=\"mt-4\">\n          <div class=\"text-gray-400\">\n            <i class=\"fa fa-sort-up mr-2\"></i>\n            <strong>").concat(comments[i].user, "</strong> ").concat(comments[i].time_ago, "\n          </div>\n          <p class=\"text-gray-700\">").concat(comments[i].content, "</p>\n        </div>      \n      "));
+
+      if (comments[i].comments.length > 0) {
+        commentString.push(makeComment(comments[i].comments, called + 1));
+      }
+    }
+
+    console.log(commentString);
+    return commentString.join('');
+  }
+
+  container.innerHTML = template.replace('{{__comments__}}', makeComment(newsContent.comments));
 } // 해쉬값에 따라 어떤 함수를 실행하여 사용자에게 제공할 것인지리를 판단하는 함수.
 // 화면 전환의 주요 쟁점
 
@@ -206,7 +224,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "56721" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "60086" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
