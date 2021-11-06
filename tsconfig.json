@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "strict": true, // 엄격모드로 vanila js에 대한 허용 범위를 엄격하게 함.
+    "target": "ES5", // 변환될 js의 버전
+    "module": "commonjs", // 모듈에 대한 코드 작성
+    "alwaysStrict": true, // 각 소스 파일에 대해 "use strict" 를 내보낸다.
+    "noImplicitAny": true, // type 에 대한 명시가 없는 vanila js는 any로 인식하게 되는데, 이를 사용 불가하여 type에 대한 명시가 되도록 하는 옵션
+    "noImplicitThis": true, // any로 표현하는 this에 대해서 오류를 발생 시키는 옵션
+    "sourceMap": true, // 소스맵(source map) 즉, .map 파일을 생성한다. 소스맵은 bundle로 인해 난독화된 파일에서 오류를 발생할 경우 찾기 어려운 문제를 디코딩하여 오류 발생 위치를 파악하는데 용이하게 해준다.
+    "downlevelIteration": true // ES5 또는 ES3를 대상으로 할 때 for..of, 스프레드와 구조분해할당에서 이터러블을 완전히 지원한다.
+  }
+}
