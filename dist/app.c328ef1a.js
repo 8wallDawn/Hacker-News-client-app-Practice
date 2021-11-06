@@ -118,26 +118,66 @@ parcelRequire = (function (modules, cache, entry, globalName) {
 
   return newRequire;
 })({"app.js":[function(require,module,exports) {
+var container = document.getElementById('root');
 var ajax = new XMLHttpRequest();
+var content = document.createElement('div');
 var NEWS_URL = 'https://api.hnpwa.com/v0/news/1.json';
-ajax.open('GET', NEWS_URL, false); // 데이터를 동기적으로 가져오겠다.
+var CONTENT_URL = 'https://api.hnpwa.com/v0/item/@id.json';
+var store = {
+  currentPage: 1
+};
 
-ajax.send(); // 데이터를 가져온다.
+function getData(url) {
+  ajax.open('GET', url, false); // 데이터를 동기적으로 가져오겠다.
 
-var newsFeed = JSON.parse(ajax.response);
-var ul = document.createElement('ul'); // console.log(newsFeed)
-// document.getElementById('root').innerHTML = `<ul>
-//     <li>${newsFeed[0].title}</li>
-//     <li>${newsFeed[1].title}</li>
-//     <li>${newsFeed[2].title}</li>
-// </ul>`;
+  ajax.send(); // 데이터를 가져온다.
 
-document.getElementById('root').appendChild(ul);
-newsFeed.forEach(function (feed) {
-  var li = document.createElement('li');
-  ul.appendChild(li);
-  li.innerHTML = "".concat(feed.title);
-});
+  return JSON.parse(ajax.response);
+}
+
+function newsFeed() {
+  var newsFeed = getData(NEWS_URL);
+  var newsList = [];
+  var maxPage = newsFeed.length % 10 === 0 ? newsFeed.length / 10 : newsFeed.length / 10 + 1;
+  var template = "\n\t\t<div class=\"container mx-auto p-4\">\n\t\t\t<h1>Hacker News</h1>\n\t\t\t<ul>\n\t\t\t\t{{__news_feed__}}\n\t\t\t</ul>\n\t\t\t<div>\n\t\t\t\t<a href=\"#/page/{{__prev_page__}}\">\uC774\uC804 \uD398\uC774\uC9C0</a>\n\t\t\t\t<a href=\"#/page/{{__next_page__}}\">\uB2E4\uC74C \uD398\uC774\uC9C0</a>\n\t\t\t</div>\n\t\t</div>\n\t";
+
+  for (var i = (store.currentPage - 1) * 10; i < store.currentPage * 10; ++i) {
+    newsList.push("\n\t\t\t<li>\n\t\t\t\t<a href='#/show/".concat(newsFeed[i].id, "'>\n\t\t\t\t\t").concat(newsFeed[i].title, " (").concat(newsFeed[i].comments_count, ")\n\t\t\t\t</a>\n\t\t\t</li>\n\t\t"));
+  }
+
+  ;
+  template = template.replace('{{__news_feed__}}', newsList.join(''));
+  template = template.replace('{{__prev_page__}}', store.currentPage > 1 ? store.currentPage - 1 : 1);
+  template = template.replace('{{__next_page__}}', store.currentPage !== maxPage ? store.currentPage + 1 : maxPage);
+  container.innerHTML = template;
+}
+
+function newsDetail() {
+  // console.log('해시가 변경되었습니다.')
+  // console.log(this.location) url 주소에 대한 정보로 hash에 대한 값을 추출 가능.
+  var id = location.hash.substr(7); // #으로 시작하는 해쉬값에서 #을 제거하여 id 값만을 순수하게 추출하여 저장
+
+  var newsContent = getData(CONTENT_URL.replace('@id', id));
+  container.innerHTML = "<h1>".concat(newsContent.title, "</h1><div><a href='#/page/").concat(store.currentPage, "'>\uBAA9\uB85D\uC73C\uB85C</div>");
+} // 해쉬값에 따라 어떤 함수를 실행하여 사용자에게 제공할 것인지리를 판단하는 함수.
+// 화면 전환의 주요 쟁점
+
+
+function router() {
+  var routePath = location.hash; // console.log(routePath); // #/page/(number)
+
+  if (routePath === '') {
+    newsFeed();
+  } else if (routePath.indexOf('#/page/') >= 0) {
+    store.currentPage = +routePath.substr(7);
+    newsFeed();
+  } else {
+    newsDetail();
+  }
+}
+
+window.addEventListener('hashchange', router);
+router();
 },{}],"C:/Users/dankthedust/AppData/Roaming/nvm/v14.16.0/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
@@ -166,7 +206,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "50595" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "56721" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
