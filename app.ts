@@ -3,15 +3,28 @@ type Store = {
 	feeds: NewsFeed[];
 }
 
-type NewsFeed = {
+type News = {
 	id: number;
-	comments_count : number;
+	time_ago: string;
+	title: string;
 	url: string;
 	user: string;
-	time_age: string;
+	content: string;
+}
+
+type NewsFeed = News & {
+	comments_count : number;
 	points: number;
-	title: string;
 	read?: boolean;
+}
+
+type NewsDetail = News & {
+	comments: NewsComment[];
+}
+
+type NewsComment = News & {
+	comments: NewsComment[];
+	level: number;
 }
 
 const container: HTMLElement | null = document.getElementById('root')
@@ -24,21 +37,21 @@ const store: Store = {
 	feeds: [],
 }
 
-function getData(url) {
+function getData<AjaxResponse>(url:string): AjaxResponse {
 	ajax.open('GET', url, false) // 데이터를 동기적으로 가져오겠다.
 	ajax.send(); // 데이터를 가져온다.
 
 	return JSON.parse(ajax.response);
 }
 
-function makeFeeds(feeds) {
+function makeFeeds(feeds:NewsFeed[]): NewsFeed[] {
 	for( let i=0; i < feeds.length; ++i) {
 		feeds[i].read = false;
 	}
 	return feeds;
 }
 
-function updateView(html) {
+function updateView(html:string): void {
 	if(container != null){
 		container.innerHTML = html;
 	} else {
@@ -46,7 +59,7 @@ function updateView(html) {
 	}
 }
 
-function newsFeed() {
+function newsFeed(): void {
 	let newsFeed: NewsFeed[] = store.feeds;
 	const newsList = [];
 	const maxPage = newsFeed.length % 10 === 0 ? newsFeed.length / 10 : newsFeed.length / 10 + 1;
@@ -77,7 +90,7 @@ function newsFeed() {
 	`
 
 	if(newsFeed.length === 0) {
-		newsFeed = store.feeds = makeFeeds(getData(NEWS_URL));
+		newsFeed = store.feeds = makeFeeds(getData<NewsFeed[]>(NEWS_URL));
 	}
 	console.log(newsFeed)
 
@@ -104,17 +117,17 @@ function newsFeed() {
 	};
 
 	template = template.replace('{{__news_feed__}}', newsList.join(''))
-	template = template.replace('{{__prev_page__}}', store.currentPage > 1 ? store.currentPage - 1 : 1)
-	template = template.replace('{{__next_page__}}', store.currentPage !== maxPage ? store.currentPage + 1 : maxPage)
+	template = template.replace('{{__prev_page__}}', String(store.currentPage > 1 ? store.currentPage - 1 : 1))
+	template = template.replace('{{__next_page__}}', String(store.currentPage !== maxPage ? store.currentPage + 1 : maxPage))
 	
 	updateView(template);
 }
 
-function newsDetail() {
+function newsDetail(): void {
 	// console.log('해시가 변경되었습니다.')
 	// console.log(this.location) url 주소에 대한 정보로 hash에 대한 값을 추출 가능.
 	const id = location.hash.substr(7) // #으로 시작하는 해쉬값에서 #을 제거하여 id 값만을 순수하게 추출하여 저장
-	const newsContent = getData(CONTENT_URL.replace('@id', id));
+	const newsContent = getData<NewsDetail>(CONTENT_URL.replace('@id', id));
   let template = `
     <div class="bg-gray-600 min-h-screen pb-8">
       <div class="bg-white text-xl">
@@ -151,36 +164,38 @@ function newsDetail() {
 		}
 	}
 
-	function makeComment(comments, called = 0) {
-		const commentString = [];
+	updateView(template.replace('{{__comments__}}', makeComment(newsContent.comments)))
+}
 
-		for(let i=0; i < comments.length; ++i) {
-      commentString.push(`
-        <div style="padding-left: ${called * 40}px;" class="mt-4">
-          <div class="text-gray-400">
-            <i class="fa fa-sort-up mr-2"></i>
-            <strong>${comments[i].user}</strong> ${comments[i].time_ago}
-          </div>
-          <p class="text-gray-700">${comments[i].content}</p>
-        </div>      
-      `);
+function makeComment(comments:NewsComment[]): string {
+	const commentString = [];
 
-			if(comments[i].comments.length > 0) {
-				commentString.push(makeComment(comments[i].comments, called+1));
-			}
+	for(let i=0; i < comments.length; ++i) {
+		const comment: NewsComment = comments[i];
+
+		commentString.push(`
+			<div style="padding-left: ${comment.level * 40}px;" class="mt-4">
+				<div class="text-gray-400">
+					<i class="fa fa-sort-up mr-2"></i>
+					<strong>${comment.user}</strong> ${comment.time_ago}
+				</div>
+				<p class="text-gray-700">${comment.content}</p>
+			</div>      
+		`);
+
+		if(comment.comments.length > 0) {
+			commentString.push(makeComment(comment.comments));
 		}
-
-		// console.log(commentString);
-		return commentString.join('')
 	}
 
-	updateView(template.replace('{{__comments__}}', makeComment(newsContent.comments)))
+	// console.log(commentString);
+	return commentString.join('')
 }
 
 
 // 해쉬값에 따라 어떤 함수를 실행하여 사용자에게 제공할 것인지리를 판단하는 함수.
 // 화면 전환의 주요 쟁점
-function router() {
+function router(): void {
 	const routePath = location.hash;
 	// console.log(routePath); // #/page/(number)
 
