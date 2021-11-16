@@ -28,7 +28,7 @@ interface NewsComment extends News {
 }
 
 const container: HTMLElement | null = document.getElementById('root')
-const ajax : XMLHttpRequest = new XMLHttpRequest();
+// const ajax : XMLHttpRequest = new XMLHttpRequest();
 const content = document.createElement('div');
 const NEWS_URL = 'https://api.hnpwa.com/v0/news/1.json'
 const CONTENT_URL = 'https://api.hnpwa.com/v0/item/@id.json';
@@ -37,11 +37,33 @@ const store: Store = {
 	feeds: [],
 }
 
-function getData<AjaxResponse>(url:string): AjaxResponse {
-	ajax.open('GET', url, false) // 데이터를 동기적으로 가져오겠다.
-	ajax.send(); // 데이터를 가져온다.
+class Api {
+	url : string;
+	ajax : XMLHttpRequest;
 
-	return JSON.parse(ajax.response);
+	constructor(url:string) {
+		this.url = url;
+		this.ajax = new XMLHttpRequest();
+	}
+
+	protected getRequest<AjaxResponse>(): AjaxResponse {
+		this.ajax.open('GET', this.url, false) // 데이터를 동기적으로 가져오겠다.
+		this.ajax.send(); // 데이터를 가져온다.
+	
+		return JSON.parse(this.ajax.response);
+	}
+}
+
+class NewsFeedApi extends Api {
+	getData(): NewsFeed[] {
+		return this.getRequest<NewsFeed[]>();
+	}
+}
+
+class NewsDetailApi extends Api {
+	getData(): NewsDetail {
+		return this.getRequest<NewsDetail>();
+	}
 }
 
 function makeFeeds(feeds:NewsFeed[]): NewsFeed[] {
@@ -60,6 +82,7 @@ function updateView(html:string): void {
 }
 
 function newsFeed(): void {
+	const api = new NewsFeedApi(NEWS_URL);
 	let newsFeed: NewsFeed[] = store.feeds;
 	const newsList = [];
 	const maxPage = newsFeed.length % 10 === 0 ? newsFeed.length / 10 : newsFeed.length / 10 + 1;
@@ -90,9 +113,9 @@ function newsFeed(): void {
 	`
 
 	if(newsFeed.length === 0) {
-		newsFeed = store.feeds = makeFeeds(getData<NewsFeed[]>(NEWS_URL));
+		newsFeed = store.feeds = makeFeeds(api.getData());
 	}
-	console.log(newsFeed)
+	// console.log(newsFeed)
 
 	for (let i = (store.currentPage - 1) * 10; i < store.currentPage * 10; ++i) {
     newsList.push(`
@@ -127,7 +150,8 @@ function newsDetail(): void {
 	// console.log('해시가 변경되었습니다.')
 	// console.log(this.location) url 주소에 대한 정보로 hash에 대한 값을 추출 가능.
 	const id = location.hash.substr(7) // #으로 시작하는 해쉬값에서 #을 제거하여 id 값만을 순수하게 추출하여 저장
-	const newsContent = getData<NewsDetail>(CONTENT_URL.replace('@id', id));
+	const api = new NewsDetailApi(CONTENT_URL.replace('@id',id));
+	const newsContent = api.getData();
   let template = `
     <div class="bg-gray-600 min-h-screen pb-8">
       <div class="bg-white text-xl">
